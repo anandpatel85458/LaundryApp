@@ -37,28 +37,29 @@ import {
   product_increase,
 } from '../Redux/Action';
 import {getProducts} from '../ReduxToolkit/ProductSlice';
+import firestore from '@react-native-firebase/firestore';
 
 const Home = ({Addtocart, navigation}) => {
   // const [productdata, setProductdata] = useState([]);
   const cartdata = useSelector(state => state.cart.cart);
   console.log('cartitem=>', cartdata);
 
- 
-
   const dispatch = useDispatch();
 
   const [search, setsearch] = useState('');
   const searchRef = useRef();
   const [olddata, setolddata] = useState([]);
-  const [data, setdata] = useState([]);  
+  const [data, setdata] = useState([]);
   const [currentLocation, setCurrentLocation] = useState(null);
-  // const [total,settotal] =useState(0)
+  const [service, setservice] = useState([]); // const [total,settotal] =useState(0)
 
   let productdata = useSelector(state => state.product.product);
 
   // console.log("search=>",search);
 
-  const total = cartdata.map((item)=>item.quantity * item.price).reduce((curr,prev)=>curr + prev,0);
+  const total = cartdata
+    .map(item => item.quantity * item.price)
+    .reduce((curr, prev) => curr + prev, 0);
   // console.log("total=>",total);
 
   const getRequestLocation = async () => {
@@ -111,16 +112,15 @@ const Home = ({Addtocart, navigation}) => {
       error => {
         console.log('Error getting location:', error);
       },
-      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+      {enableHighAccuracy: true, timeout: 20000, maximumAge: 10000},
     );
   };
 
   useEffect(() => {
     getRequestLocation();
-    
   }, []);
 
-   const clothdata = [
+  const clothdata = [
     {
       id: 1,
       image: 'https://cdn-icons-png.flaticon.com/128/4643/4643574.png',
@@ -173,12 +173,12 @@ const Home = ({Addtocart, navigation}) => {
   ];
 
   const Searchdata = text => {
-    let templist = data.filter(item =>
-   {  return item.name.toLowerCase().indexOf(text.toLowerCase()) > -1;}
-    );
-    console.log("templist=>",templist);
+    let templist = data.filter(item => {
+      return item.name.toLowerCase().indexOf(text.toLowerCase()) > -1;
+    });
+    console.log('templist=>', templist);
     setdata(templist);
-  
+
     productdata = templist;
     console.log('data2=>', templist);
   };
@@ -187,10 +187,26 @@ const Home = ({Addtocart, navigation}) => {
   //   Searchdata(search);
   // }, [search]);
 
+  const getitem = async () => {
+    try {
+      firestore()
+        .collection('types')
+        .onSnapshot(snap => {
+          const tempdata = [];
 
+          snap.forEach(item => {
+            tempdata.push(item.data());
+          });
+          // setservice(tempdata);
+        });
+    } catch (error) {}
+  };
 
   useEffect(() => {
-    
+    getitem();
+  }, []);
+
+  useEffect(() => {
     if (productdata.length > 0) {
       return;
     }
@@ -198,12 +214,9 @@ const Home = ({Addtocart, navigation}) => {
       clothdata.map(data => dispatch(getProducts(data)));
     };
     fetchingdata();
-  
-
   }, []);
 
   console.log('data1=>', data);
-
 
   return (
     <>
@@ -226,19 +239,17 @@ const Home = ({Addtocart, navigation}) => {
             style={{
               alignItems: 'center',
               marginHorizontal: moderateScale(-30),
-            justifyContent:'flex-start',
-            flexWrap:'wrap',
-            
+              justifyContent: 'flex-start',
+              flexWrap: 'wrap',
             }}>
             {currentLocation ? (
               <Text
                 style={{
                   fontSize: scale(12),
                   color: Colors.DarksilverColor,
-                
+
                   marginTop: moderateVerticalScale(20),
-                 textAlign:'left'
-              
+                  textAlign: 'left',
                 }}>
                 {currentLocation.displayname},{currentLocation.state},{' '}
                 {currentLocation.postcode}
@@ -268,8 +279,8 @@ const Home = ({Addtocart, navigation}) => {
               Searchdata(text);
               setsearch(text);
             }}
-            clearButtonMode='always'
-            autoCapitalize='none'
+            clearButtonMode="always"
+            autoCapitalize="none"
             autoCorrect={false}
           />
           <Icons name="search" size={25} color={'#AA0000'} />
@@ -278,7 +289,6 @@ const Home = ({Addtocart, navigation}) => {
         <DataServices />
 
         {productdata.map((item, index) => {
-          
           return (
             <TouchableOpacity>
               <Dressitem item={item} key={index} navigation={navigation} />
@@ -313,7 +323,7 @@ const Home = ({Addtocart, navigation}) => {
               extraa charges migth apply
             </Text>
           </View>
-          <TouchableOpacity onPress={()=>navigation.push('Pickup')}>
+          <TouchableOpacity onPress={() => navigation.push('Pickup')}>
             <Text style={{fontSize: scale(14), color: Colors.White}}>
               process to pickup
             </Text>
